@@ -1,15 +1,18 @@
 package com.bcam.bcmonitor.extractor.bulk;
 
 import com.bcam.bcmonitor.extractor.client.ReactiveClient;
+import com.bcam.bcmonitor.extractor.csv.BitcoinToCSV;
 import com.bcam.bcmonitor.model.AbstractBlock;
 import com.bcam.bcmonitor.model.AbstractTransaction;
-import com.bcam.bcmonitor.model.BitcoinBlock;
+import com.bcam.bcmonitor.model.BitcoinTransaction;
 import com.bcam.bcmonitor.storage.BlockRepository;
 import com.bcam.bcmonitor.storage.TransactionRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.ParallelFlux;
+import reactor.core.scheduler.Schedulers;
 
 
 public class BulkExtractorImpl<B extends AbstractBlock, T extends AbstractTransaction> implements BulkExtractor<B, T> {
@@ -20,6 +23,7 @@ public class BulkExtractorImpl<B extends AbstractBlock, T extends AbstractTransa
     final private TransactionRepository<T> transactionRepository;
 
     final private ReactiveClient<B, T> client;
+    private BitcoinToCSV<B> csvWriter;
 
     public BulkExtractorImpl(
             BlockRepository<B> repository,
@@ -32,17 +36,24 @@ public class BulkExtractorImpl<B extends AbstractBlock, T extends AbstractTransa
     }
 
 
-
     // see https://github.com/reactor/reactive-streams-commons/issues/21#issuecomment-210178344
+
     /**
-     *  if fails, could delay manually Flux<document> findAll() {
-     *     return Flux.interval(Duration.ofSeconds(1))
-     *             .takeWhile(i -> i < 9)
-     *             .map(i -> i.intValue() + 1)
-     *             .map(Document::new);
+     * if fails, could delay manually Flux<document> findAll() {
+     * return Flux.interval(Duration.ofSeconds(1))
+     * .takeWhile(i -> i < 9)
+     * .map(i -> i.intValue() + 1)
+     * .map(Document::new);
      */
+    @Override
     public Flux<B> saveBlocks(long fromHeight, long toHeight) {
 
+        return fetchBlocks(fromHeight, toHeight)
+                .concatMap(blockRepository::save)
+                .doOnNext(bitcoinBlock -> logger.info("Saved block " + bitcoinBlock));
+    }
+
+    private Flux<B> fetchBlocks(long fromHeight, long toHeight) {
         int fromInt = (int) fromHeight;
         int count = (int) (toHeight - fromInt) + 1;
 
@@ -50,34 +61,26 @@ public class BulkExtractorImpl<B extends AbstractBlock, T extends AbstractTransa
 
         return Flux.range(fromInt, count)
                 .concatMap(client::getBlockHash)
-                    .doOnNext(hash -> logger.info("Got block hash from client " + hash))
-                .concatMap(hash -> client.getBlock(hash))
-                    .doOnNext(bitcoinBlock -> logger.info("Created block " + bitcoinBlock))
-                .concatMap(blockRepository::save)
-                    .doOnNext(bitcoinBlock -> logger.info("Saved block " + bitcoinBlock));
-        //
-        // return Flux.range(fromInt, count)
-        //         .flatMap(client::getBlockHash)
-        //         .doOnNext(hash -> logger.info("Got block hash from client " + hash))
-        //         // .flatMap(source -> source) // == merge()
-        //         .flatMap(client::getBlock)
-        //         .doOnNext(bitcoinBlock -> logger.info("Created block " + bitcoinBlock))
-        //         .flatMap(blockRepository::save);
-        //         // .doOnNext(bitcoinBlock -> logger.info("Saved block " + bitcoinBlock));
-
+                .doOnNext(hash -> logger.info("Got block hash from client " + hash))
+                .concatMap(client::getBlock)
+                .doOnNext(bitcoinBlock -> logger.info("Created block " + bitcoinBlock));
     }
 
     public Flux<T> saveTransactions(B block) {
-        return Flux.fromIterable(block.getTxids())
-                    .doOnNext(txids -> logger.info("Got txids " + txids))
-                .concatMap(client::getTransaction)
-                    .doOnNext(txids -> logger.info("Created transactions from client " + txids))
+        return fetchTransactions(block)
                 .flatMap(transactionRepository::save)
-                .   doOnNext(txids -> logger.info("Saved txids " + txids));
-
+                .doOnNext(txids -> logger.info("Saved txids " + txids));
     }
 
+    private Flux<T> fetchTransactions(B block) {
+        return Flux.fromIterable(block.getTxids())
+//                .doOnNext(txids -> logger.info("Got txids " + txids))
+                .filter(tx -> tx != null && !tx.equals(""))
+                .concatMap(client::getTransaction);
+//                .doOnNext(txids -> logger.info("Created transactions from client " + txids));
+    }
 
+    @Override
     public Flux<T> saveTransactions(Flux<B> blocks) {
 
         return blocks
@@ -87,34 +90,18 @@ public class BulkExtractorImpl<B extends AbstractBlock, T extends AbstractTransa
                 .flatMap(transactionRepository::save);
     }
 
-
+    @Override
     public Disposable saveBlocksAndTransactions(long fromHeight, long toHeight) {
 
         return saveBlocks(fromHeight, toHeight)
                 .doOnNext(
-                        block -> {
-                            saveTransactions(block)
-                                    .subscribe(transaction -> logger.info("Saved transaction " + transaction));
-                        }
+                        block -> saveTransactions(block)
+                                .subscribe(transaction -> logger.info("Saved transaction " + transaction))
                 )
                 .subscribe(block -> logger.info("Saved block " + block));
-
     }
 
-    // // issue: transaction sub not take part in backpressure. do we want it to wait? not an issue if speed of blocks slow anyway?
-    // public Flux<B> saveBlocksAndTransactionsForward(long fromHeight, long toHeight) {
-    //
-    //     logger.info("About to save and forward blocks and transactions from " + fromHeight + " to " + toHeight + "; " + this.getClass());
-    //
-    //     return saveBlocks(fromHeight, toHeight)
-    //             .doOnNext(
-    //                     block -> {
-    //                         saveTransactions(block)
-    //                                 .subscribe(transaction -> logger.info("Saved transaction " + transaction));
-    //                     }
-    //             );
-    // }
-
+    @Override
     public Flux<T> saveBlocksAndTransactionsForward(long fromHeight, long toHeight) {
 
         logger.info("About to save and forward blocks and transactions from " + fromHeight + " to " + toHeight);
@@ -125,7 +112,38 @@ public class BulkExtractorImpl<B extends AbstractBlock, T extends AbstractTransa
                 );
     }
 
+    private ParallelFlux<B> fetchBlocksParallel(long fromHeight, long toHeight) {
+        int fromInt = (int) fromHeight;
+        int count = (int) (toHeight - fromInt) + 1;
 
+        logger.info("Count: " + count);
+
+        return Flux.range(fromInt, count)
+                .parallel(3)
+                .runOn(Schedulers.elastic())
+                .concatMap(client::getBlockHash)
+                .concatMap(client::getBlock)
+                .doOnNext(bitcoinBlock -> logger.info("Created block " + bitcoinBlock));
+    }
+
+    private ParallelFlux<T> fetchTransactionsParallel(B block) {
+        return Flux.fromIterable(block.getTxids())
+                .parallel(3)
+                .runOn(Schedulers.elastic())
+                .concatMap(client::getTransaction);
+    }
+
+    @Override
+    public Disposable saveBlocksAndTransactionsToNeo4j(long fromHeight, long toHeight) {
+        csvWriter = new BitcoinToCSV<>();
+
+        return fetchBlocksParallel(fromHeight, toHeight)
+                .flatMap(csvWriter::writeBlock)
+                .concatMap(this::fetchTransactionsParallel)
+                .flatMap(transaction -> csvWriter.writeTransaction((BitcoinTransaction) transaction))
+                .doOnError(error -> logger.error("===================== i broke here:" + error))
+                .subscribe(tx -> logger.info("Finished with tx {}", tx));
+    }
 
     @Override
     public String toString() {

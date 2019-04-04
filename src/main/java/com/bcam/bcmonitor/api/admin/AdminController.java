@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -106,7 +107,13 @@ public class AdminController {
 
         return bitcoinBulkExtractor
                 .saveBlocksAndTransactionsForward(fromHeight, toHeight);
+    }
 
+    @GetMapping(value = "/extract/bitcoin/neo4j/{fromHeight}/{toHeight}", produces = "application/stream+json")
+    public Disposable extractBitcoinToNeo4j(@PathVariable Long fromHeight, @PathVariable Long toHeight) {
+        logger.info("Admin controller extracting Bitcoin to Neo4j");
+
+        return bitcoinBulkExtractor.saveBlocksAndTransactionsToNeo4j(fromHeight, toHeight);
     }
 
     @GetMapping(value = "/extract/dash/{fromHeight}/{toHeight}", produces = "application/stream+json")
@@ -156,17 +163,21 @@ public class AdminController {
     }
 
 
-
     private Blockchain convertBlockchain(String name) {
 
         name = name.toLowerCase();
 
         switch (name) {
-            case "bitcoin": return Blockchain.BITCOIN;
-            case "zcash": return Blockchain.ZCASH;
-            case "dash": return Blockchain.DASH;
-            case "monero": return Blockchain.MONERO;
-            default: throw new RuntimeException("can't find name");
+            case "bitcoin":
+                return Blockchain.BITCOIN;
+            case "zcash":
+                return Blockchain.ZCASH;
+            case "dash":
+                return Blockchain.DASH;
+            case "monero":
+                return Blockchain.MONERO;
+            default:
+                throw new RuntimeException("can't find name");
         }
     }
 

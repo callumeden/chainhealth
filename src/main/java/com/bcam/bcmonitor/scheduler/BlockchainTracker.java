@@ -1,27 +1,21 @@
 package com.bcam.bcmonitor.scheduler;
 
-import com.bcam.bcmonitor.extractor.client.*;
-import com.bcam.bcmonitor.model.BitcoinBlock;
+import com.bcam.bcmonitor.extractor.client.ReactiveBitcoinClient;
+import com.bcam.bcmonitor.extractor.client.ReactiveClientImpl;
+import com.bcam.bcmonitor.extractor.client.ReactiveDashClient;
+import com.bcam.bcmonitor.extractor.client.ReactiveZCashClient;
 import com.bcam.bcmonitor.model.Blockchain;
-import com.bcam.bcmonitor.model.BlockchainInfo;
-import com.sun.org.apache.xpath.internal.operations.Bool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
-import javax.validation.constraints.Null;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static com.bcam.bcmonitor.model.Blockchain.BITCOIN;
-import static com.bcam.bcmonitor.model.Blockchain.DASH;
-import static com.bcam.bcmonitor.model.Blockchain.ZCASH;
+import static com.bcam.bcmonitor.model.Blockchain.*;
 
 /**
  * Class to keep track of current blockchain status

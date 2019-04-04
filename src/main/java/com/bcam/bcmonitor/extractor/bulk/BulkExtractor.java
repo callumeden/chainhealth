@@ -2,9 +2,6 @@ package com.bcam.bcmonitor.extractor.bulk;
 
 import com.bcam.bcmonitor.model.AbstractBlock;
 import com.bcam.bcmonitor.model.AbstractTransaction;
-import com.bcam.bcmonitor.model.BitcoinBlock;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.stereotype.Component;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 
@@ -19,4 +16,6 @@ public interface BulkExtractor<B extends AbstractBlock, T extends AbstractTransa
     Disposable saveBlocksAndTransactions(long fromHeight, long toHeight);
 
     Flux<T> saveBlocksAndTransactionsForward(long fromHeight, long toHeight);
+
+    Disposable saveBlocksAndTransactionsToNeo4j(long fromHeight, long toHeight);
 }

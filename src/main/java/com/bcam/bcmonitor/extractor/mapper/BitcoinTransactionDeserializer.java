@@ -11,7 +11,7 @@ import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Date;
+import java.util.List;
 
 public class BitcoinTransactionDeserializer extends StdDeserializer<BitcoinTransaction> {
 
@@ -25,41 +25,52 @@ public class BitcoinTransactionDeserializer extends StdDeserializer<BitcoinTrans
         super(vc);
     }
 
-    public static ArrayList<TransactionInput> readInputs(JsonNode result){
+    public static ArrayList<TransactionInput> readInputs(JsonNode result) {
         ArrayList<TransactionInput> vin = new ArrayList<>();
 
-        try {
-            result.get("vin").forEach(jsonNode -> {
-
-                TransactionInput in = new TransactionInput();
+        result.get("vin").forEach(jsonNode -> {
+            TransactionInput in = new TransactionInput();
+            if (jsonNode.has("coinbase")) {
+                in.setCoinbase();
+            } else {
                 in.setTxid(jsonNode.get("txid").textValue());
                 in.setVout(jsonNode.get("vout").intValue());
-                vin.add(in);
-            });
+            }
 
-        } catch (NullPointerException e) {
-            // if we can't find any inputs this must be a coinbase transaction
-            assert (!result.get("vin").get(0).get("coinbase").asText().isEmpty() );
-        }
+            vin.add(in);
+        });
+
 
         return vin;
     }
 
-    public static ArrayList<TransactionOutput> readOutputs(JsonNode result) {
+    public static ArrayList<TransactionOutput> readOutputs(JsonNode result, String txid) {
         // get outputs
         ArrayList<TransactionOutput> vout = new ArrayList<>();
 
         result.get("vout").forEach(jsonNode -> {
             // System.out.println("THROUGH VOUT");
             TransactionOutput out = new TransactionOutput();
+            out.setTxid(txid);
             out.setValue(jsonNode.get("value").floatValue());
             out.setIndex(jsonNode.get("n").intValue());
+            JsonNode scriptPubKey = jsonNode.get("scriptPubKey");
+            if (scriptPubKey != null) {
+                out.setAddresses(readStringArray(scriptPubKey.get("addresses")));
+            }
             vout.add(out);
-            // System.out.println("SET part VOUT");
 
         });
-
         return vout;
+
+    }
+
+    private static List<String> readStringArray(JsonNode array) {
+        List<String> list = new ArrayList<>();
+        if (array != null) {
+            array.forEach(item -> list.add(item.toString().replaceAll("^\"|\"$", "")));
+        }
+        return list;
     }
 
     @Override
@@ -69,32 +80,20 @@ public class BitcoinTransactionDeserializer extends StdDeserializer<BitcoinTrans
         ObjectCodec codec = parser.getCodec();
         JsonNode node = codec.readTree(parser);
 
-        if (! node.get("error").isNull()) {
+        if (!node.get("error").isNull()) {
             throw new RPCResponseException("Error received from RPC. Message: " + node.get("error").get("message").textValue());
-        }
-
-        else {
+        } else {
             JsonNode result = node.get("result");
-
-            transaction.setHash(result.get("txid").asText());  // fine where "hash" and "txid" are same (change for segwit)
+            String txid = result.get("txid").asText();
+            transaction.setHash(txid);  // fine where "hash" and "txid" are same (change for segwit)
             transaction.setSizeBytes(result.get("size").asInt());
             transaction.setBlockHash(result.get("blockhash").asText());
 
             transaction.setVin(readInputs(result));
-            transaction.setVout(readOutputs(result));
+            transaction.setVout(readOutputs(result, txid));
 
             transaction.setTimeReceived(new java.util.Date(System.currentTimeMillis()).toInstant().getEpochSecond());
-
-
         }
-
-
-        //  ArrayList<BitcoinTransactionInput> vin = mapper.readValue(node.get("vin").asText(), new TypeReference<ArrayList<BitcoinTransactionInput>>(){});
-        //
-        //  ArrayList<BitcoinTransactionOutput> vout;
-        //
-        //
-        // List<> listCar = objectMapper.readValue(jsonCarArray, new TypeReference<List<Car>>(){});
 
         return transaction;
     }

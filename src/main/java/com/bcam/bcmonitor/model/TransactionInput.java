@@ -9,13 +9,13 @@ public class TransactionInput {
 
     private String txid;
     private int vout;
+    private boolean isCoinbase;
 
     /**
      * strategy:
      * 1. look up transaction txid with getrawtransaction
      * 2. get output number vout
      * 3. get value from output vout
-     *
      */
     @JsonIgnore
     public float getValue() throws IOException {
@@ -27,8 +27,8 @@ public class TransactionInput {
     }
 
 
-     // do value calculation later and resort to APIs if necessary.
-     // monero API has for both input and output
+    // do value calculation later and resort to APIs if necessary.
+    // monero API has for both input and output
 
 
     public String getTxid() {
@@ -46,4 +46,13 @@ public class TransactionInput {
     public void setVout(int vout) {
         this.vout = vout;
     }
+
+    public void setCoinbase() {
+        this.isCoinbase = true;
+    }
+
+    public boolean isCoinbase() {
+        return isCoinbase;
+    }
+
 }

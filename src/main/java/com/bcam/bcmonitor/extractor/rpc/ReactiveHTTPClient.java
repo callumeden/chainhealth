@@ -6,6 +6,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.reactive.ClientHttpConnector;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.http.codec.json.Jackson2JsonDecoder;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
@@ -14,12 +16,56 @@ import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClient.ResponseSpec;
 import reactor.core.publisher.Mono;
+import reactor.ipc.netty.options.ClientProxyOptions;
+
+import java.time.Duration;
+
+import static java.time.temporal.ChronoUnit.MILLIS;
 
 public class ReactiveHTTPClient {
 
     private Logger logger;
     private WebClient client;
     private ObjectMapper mapper;
+
+
+    private WebClient.Builder getClientBuilder(String hostName, int port, String userName, String password) {
+        return WebClient.builder()
+                .baseUrl("http://" + hostName + ':' + port)
+                .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_PLAIN_VALUE)
+                .filter(ExchangeFilterFunctions.basicAuthentication(userName, password))
+                .filter(logRequest())
+                .filter(logResponse());
+    }
+
+    /**
+     * Creates an HTTP client with a authentication and a custom Jackson deserializer
+     * and a proxy
+     */
+    public ReactiveHTTPClient(String hostName,
+                              int port,
+                              String userName,
+                              String password,
+                              ObjectMapper mapper,
+                              String proxyHost,
+                              int proxyPort) {
+
+        ExchangeStrategies strategies = buildStrategies(mapper);
+
+        ClientHttpConnector connector = new ReactorClientHttpConnector(
+                options -> options.proxy(
+                        proxyOptions -> proxyOptions.type(
+                                ClientProxyOptions.Proxy.SOCKS5
+                        ).host(proxyHost).port(proxyPort)
+                ));
+
+        client = getClientBuilder(hostName, port, userName, password)
+                .exchangeStrategies(strategies)
+                .clientConnector(connector)
+                .build();
+
+        logger = LoggerFactory.getLogger(ReactiveHTTPClient.class);
+    }
 
     /**
      * Creates an HTTP client with a authentication and a custom Jackson deserializer
@@ -34,12 +80,7 @@ public class ReactiveHTTPClient {
         ExchangeStrategies strategies = buildStrategies(mapper);
 
 
-        client = WebClient.builder()
-                .baseUrl("http://" + hostName + ':' + port)
-                .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_PLAIN_VALUE)
-                .filter(ExchangeFilterFunctions.basicAuthentication(userName, password))
-                .filter(logRequest())
-                .filter(logResponse())
+        client = getClientBuilder(hostName, port, userName, password)
                 .exchangeStrategies(strategies)
                 .build();
 
@@ -54,12 +95,7 @@ public class ReactiveHTTPClient {
                               String userName,
                               String password) {
 
-        client = WebClient.builder()
-                .baseUrl("http://" + hostName + ':' + port)
-                .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_PLAIN_VALUE)
-                .filter(ExchangeFilterFunctions.basicAuthentication(userName, password))
-                .filter(logRequest())
-                .filter(logResponse())
+        client = getClientBuilder(hostName, port, userName, password)
                 .build();
 
         logger = LoggerFactory.getLogger(ReactiveHTTPClient.class);
@@ -74,7 +110,7 @@ public class ReactiveHTTPClient {
         client = WebClient.builder()
                 .baseUrl("http://" + hostName + ':' + port)
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_PLAIN_VALUE)
-                 .filter(logRequest())
+                .filter(logRequest())
                 .filter(logResponse())
                 .build();
 
@@ -89,7 +125,7 @@ public class ReactiveHTTPClient {
                 .codecs(clientDefaultCodecsConfigurer -> clientDefaultCodecsConfigurer
                         .defaultCodecs()
                         .jackson2JsonDecoder(new Jackson2JsonDecoder(mapper, MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN, MediaType.TEXT_HTML))
-                    )
+                )
                 // .codecs(clientCodecConfigurer -> clientCodecConfigurer
                 //         .registerDefaults(false))
                 .build();
@@ -98,7 +134,7 @@ public class ReactiveHTTPClient {
     // logging
     private ExchangeFilterFunction logRequest() {
         return (clientRequest, next) -> {
-            logger.info("Request: {} {}", clientRequest.method(), clientRequest.url());
+//            logger.info("Request: {} {}", clientRequest.method(), clientRequest.url());
             // clientRequest.headers()
             //         .forEach((name, values) -> values.forEach(value -> logger.info("{}={}", name, value)));
             // logger.info("Attrs: " + clientRequest.attributes());
@@ -108,7 +144,7 @@ public class ReactiveHTTPClient {
 
     private ExchangeFilterFunction logResponse() {
         return ExchangeFilterFunction.ofResponseProcessor(clientResponse -> {
-            logger.info("Response Status {}", clientResponse.statusCode());
+//            logger.info("Response Status {}", clientResponse.statusCode());
             // logger.info("Response Content type {}", clientResponse.headers().contentType());
             return Mono.just(clientResponse);
         });
@@ -179,7 +215,6 @@ public class ReactiveHTTPClient {
     }
 
 
-
     public Mono<String> requestString(String JSONRequest) {
 
         return client.post()
@@ -187,7 +222,9 @@ public class ReactiveHTTPClient {
                 .body(BodyInserters.fromObject(JSONRequest))
                 .retrieve()
                 .bodyToMono(RPCResult.class)
-                .map(RPCResult::toString);
+                .map(RPCResult::toString)
+                .doOnError(e -> logger.error("HTTP Client Error {}", JSONRequest,  e))
+                .retryWhen(errors -> errors.delayElements(Duration.of(100, MILLIS)));
 
         // return mapper.readValue(RPCResponse.flatMap());
     }

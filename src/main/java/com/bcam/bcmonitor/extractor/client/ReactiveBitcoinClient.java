@@ -7,13 +7,16 @@ import com.bcam.bcmonitor.extractor.rpc.ReactiveHTTPClient;
 import com.bcam.bcmonitor.model.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
 import javax.annotation.PostConstruct;
+import java.time.Duration;
+
+import static java.time.temporal.ChronoUnit.MILLIS;
 
 // @Qualifier("ReactiveBitcoinClient")
 @Component
@@ -31,9 +34,20 @@ public class ReactiveBitcoinClient extends ReactiveClientImpl implements Reactiv
     @Value("${BITCOIN_PW}")
     private String password;
 
-    protected ReactiveHTTPClient client;
+    @Value("${CLIENT_PROXY_ENABLED}")
+    private int proxyEnabled;
 
-    public ReactiveBitcoinClient() { }
+    @Value("${CLIENT_PROXY_HOST}")
+    private String proxyHost;
+
+    @Value("${CLIENT_PROXY_PORT}")
+    private int proxyPort;
+
+    protected ReactiveHTTPClient client;
+    private Logger logger = LoggerFactory.getLogger(ReactiveBitcoinClient.class);
+
+    public ReactiveBitcoinClient() {
+    }
 
     @PostConstruct
     protected void buildClient() {
@@ -41,7 +55,8 @@ public class ReactiveBitcoinClient extends ReactiveClientImpl implements Reactiv
 
         ObjectMapper mapper = buildMapper();
 
-        client = new ReactiveHTTPClient(hostName, port, userName, password, mapper);
+        client = proxyEnabled == 1 ? new ReactiveHTTPClient(hostName, port, userName, password, mapper, proxyHost, proxyPort) :
+                new ReactiveHTTPClient(hostName, port, userName, password, mapper);
     }
 
     protected ObjectMapper buildMapper() {
@@ -74,7 +89,9 @@ public class ReactiveBitcoinClient extends ReactiveClientImpl implements Reactiv
 
         return client
                 .requestResponseSpec(request.toString())
-                .bodyToMono(BitcoinBlock.class);
+                .bodyToMono(BitcoinBlock.class)
+                .doOnError(e -> logger.error("GET Block hash errored ========== {}", hash))
+                .retryWhen(errors -> errors.delayElements(Duration.of(100, MILLIS)));
     }
 
 
@@ -86,7 +103,9 @@ public class ReactiveBitcoinClient extends ReactiveClientImpl implements Reactiv
 
         return client
                 .requestResponseSpec(request.toString())
-                .bodyToMono(BitcoinTransaction.class);
+                .bodyToMono(BitcoinTransaction.class)
+                .doOnError(e -> logger.error("GET TX hash errored ========== {}, error: {}", hash, e))
+                .retryWhen(errors -> errors.delayElements(Duration.of(100, MILLIS)));
     }
 
 

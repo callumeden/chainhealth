@@ -1,9 +1,6 @@
 package com.bcam.bcmonitor.extractor.mapper;
 
-import com.bcam.bcmonitor.model.BitcoinTransaction;
 import com.bcam.bcmonitor.model.DashTransaction;
-import com.bcam.bcmonitor.model.TransactionInput;
-import com.bcam.bcmonitor.model.TransactionOutput;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.ObjectCodec;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -11,7 +8,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 
 import java.io.IOException;
-import java.util.ArrayList;
 
 import static com.bcam.bcmonitor.extractor.mapper.BitcoinTransactionDeserializer.readInputs;
 import static com.bcam.bcmonitor.extractor.mapper.BitcoinTransactionDeserializer.readOutputs;
@@ -40,14 +36,14 @@ public class DashTransactionDeserializer extends StdDeserializer<DashTransaction
 
 
         JsonNode result = node.get("result");
-
-        transaction.setHash(result.get("txid").asText());
+        String txid = result.get("txid").asText();
+        transaction.setHash(txid);
         transaction.setSizeBytes(result.get("size").asInt());
         transaction.setBlockHash(result.get("blockhash").asText());
         transaction.setTimeReceived(new java.util.Date(System.currentTimeMillis()).toInstant().getEpochSecond());
 
         transaction.setVin(readInputs(result));
-        transaction.setVout(readOutputs(result));
+        transaction.setVout(readOutputs(result, txid));
 
 
         return transaction;
