@@ -16,6 +16,4 @@ public interface BulkExtractor<B extends AbstractBlock, T extends AbstractTransa
     Disposable saveBlocksAndTransactions(long fromHeight, long toHeight);
 
     Flux<T> saveBlocksAndTransactionsForward(long fromHeight, long toHeight);
-
-    Disposable saveBlocksAndTransactionsToNeo4j(long fromHeight, long toHeight);
 }

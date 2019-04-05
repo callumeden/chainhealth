@@ -1,19 +1,14 @@
 package com.bcam.bcmonitor.extractor.bulk;
 
 import com.bcam.bcmonitor.extractor.client.ReactiveClient;
-import com.bcam.bcmonitor.extractor.csv.BitcoinToCSV;
 import com.bcam.bcmonitor.model.AbstractBlock;
 import com.bcam.bcmonitor.model.AbstractTransaction;
-import com.bcam.bcmonitor.model.BitcoinTransaction;
 import com.bcam.bcmonitor.storage.BlockRepository;
 import com.bcam.bcmonitor.storage.TransactionRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.ParallelFlux;
-import reactor.core.scheduler.Schedulers;
-
 
 public class BulkExtractorImpl<B extends AbstractBlock, T extends AbstractTransaction> implements BulkExtractor<B, T> {
 
@@ -23,7 +18,7 @@ public class BulkExtractorImpl<B extends AbstractBlock, T extends AbstractTransa
     final private TransactionRepository<T> transactionRepository;
 
     final private ReactiveClient<B, T> client;
-    private BitcoinToCSV<B> csvWriter;
+
 
     public BulkExtractorImpl(
             BlockRepository<B> repository,
@@ -74,10 +69,10 @@ public class BulkExtractorImpl<B extends AbstractBlock, T extends AbstractTransa
 
     private Flux<T> fetchTransactions(B block) {
         return Flux.fromIterable(block.getTxids())
-//                .doOnNext(txids -> logger.info("Got txids " + txids))
+                .doOnNext(txids -> logger.info("Got txids " + txids))
                 .filter(tx -> tx != null && !tx.equals(""))
-                .concatMap(client::getTransaction);
-//                .doOnNext(txids -> logger.info("Created transactions from client " + txids));
+                .concatMap(client::getTransaction)
+                .doOnNext(txids -> logger.info("Created transactions from client " + txids));
     }
 
     @Override
@@ -110,39 +105,6 @@ public class BulkExtractorImpl<B extends AbstractBlock, T extends AbstractTransa
                 .concatMap(
                         this::saveTransactions
                 );
-    }
-
-    private ParallelFlux<B> fetchBlocksParallel(long fromHeight, long toHeight) {
-        int fromInt = (int) fromHeight;
-        int count = (int) (toHeight - fromInt) + 1;
-
-        logger.info("Count: " + count);
-
-        return Flux.range(fromInt, count)
-                .parallel(3)
-                .runOn(Schedulers.elastic())
-                .concatMap(client::getBlockHash)
-                .concatMap(client::getBlock)
-                .doOnNext(bitcoinBlock -> logger.info("Created block " + bitcoinBlock));
-    }
-
-    private ParallelFlux<T> fetchTransactionsParallel(B block) {
-        return Flux.fromIterable(block.getTxids())
-                .parallel(3)
-                .runOn(Schedulers.elastic())
-                .concatMap(client::getTransaction);
-    }
-
-    @Override
-    public Disposable saveBlocksAndTransactionsToNeo4j(long fromHeight, long toHeight) {
-        csvWriter = new BitcoinToCSV<>();
-
-        return fetchBlocksParallel(fromHeight, toHeight)
-                .flatMap(csvWriter::writeBlock)
-                .concatMap(this::fetchTransactionsParallel)
-                .flatMap(transaction -> csvWriter.writeTransaction((BitcoinTransaction) transaction))
-                .doOnError(error -> logger.error("===================== i broke here:" + error))
-                .subscribe(tx -> logger.info("Finished with tx {}", tx));
     }
 
     @Override

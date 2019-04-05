@@ -1,6 +1,7 @@
 package com.bcam.bcmonitor.api.admin;
 
 import com.bcam.bcmonitor.extractor.bulk.BulkExtractor;
+import com.bcam.bcmonitor.extractor.bulk.BulkExtractorBitcoinToCSV;
 import com.bcam.bcmonitor.model.*;
 import com.bcam.bcmonitor.scheduler.BlockchainTracker;
 import com.bcam.bcmonitor.scheduler.ExtractionScheduler;
@@ -26,10 +27,16 @@ public class AdminController {
     private BulkExtractor<BitcoinBlock, BitcoinTransaction> bitcoinBulkExtractor;
     private BulkExtractor<DashBlock, DashTransaction> dashBulkExtractor;
     private BulkExtractor<ZCashBlock, ZCashTransaction> zCashBulkExtractor;
+    private BulkExtractorBitcoinToCSV bitcoinToCSVBulkExtractor;
 
 
     @Autowired
-    AdminController(ExtractionScheduler scheduler, BlockchainTracker tracker, BulkExtractor<BitcoinBlock, BitcoinTransaction> bitcoinBulkExtractor, BulkExtractor<DashBlock, DashTransaction> dashBulkExtractor, BulkExtractor<ZCashBlock, ZCashTransaction> zCashBulkExtractor) {
+    AdminController(ExtractionScheduler scheduler,
+                    BlockchainTracker tracker,
+                    BulkExtractor<BitcoinBlock, BitcoinTransaction> bitcoinBulkExtractor,
+                    BulkExtractor<DashBlock, DashTransaction> dashBulkExtractor,
+                    BulkExtractor<ZCashBlock, ZCashTransaction> zCashBulkExtractor,
+                    BulkExtractorBitcoinToCSV bitcoinToCSVBulkExtractor) {
 
         this.scheduler = scheduler;
         this.tracker = tracker;
@@ -37,6 +44,7 @@ public class AdminController {
         this.bitcoinBulkExtractor = bitcoinBulkExtractor;
         this.dashBulkExtractor = dashBulkExtractor;
         this.zCashBulkExtractor = zCashBulkExtractor;
+        this.bitcoinToCSVBulkExtractor = bitcoinToCSVBulkExtractor;
     }
 
     // ==================== Admin ====================
@@ -53,7 +61,6 @@ public class AdminController {
         result.put("initialHeights", scheduler.getInitialHeights());
 
         return Mono.just(result);
-
     }
 
     @GetMapping("/enablesync/{blockchain}")
@@ -113,7 +120,7 @@ public class AdminController {
     public Disposable extractBitcoinToNeo4j(@PathVariable Long fromHeight, @PathVariable Long toHeight) {
         logger.info("Admin controller extracting Bitcoin to Neo4j");
 
-        return bitcoinBulkExtractor.saveBlocksAndTransactionsToNeo4j(fromHeight, toHeight);
+        return bitcoinToCSVBulkExtractor.saveBlocksAndTransactionsToNeo4j(fromHeight, toHeight);
     }
 
     @GetMapping(value = "/extract/dash/{fromHeight}/{toHeight}", produces = "application/stream+json")
@@ -123,9 +130,7 @@ public class AdminController {
 
         return dashBulkExtractor
                 .saveBlocksAndTransactionsForward(fromHeight, toHeight);
-
     }
-
 
     @GetMapping(value = "/extract/zcash/{fromHeight}/{toHeight}", produces = "application/stream+json")
     public Flux<ZCashTransaction> extractZCash(@PathVariable Long fromHeight, @PathVariable Long toHeight) {

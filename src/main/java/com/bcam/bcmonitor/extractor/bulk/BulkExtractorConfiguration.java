@@ -50,4 +50,11 @@ public class BulkExtractorConfiguration {
                 reactiveDashClient
         );
     }
+
+    @Bean
+    public BulkExtractorBitcoinToCSV bitcoinToCSVBulkExtractor(
+            ReactiveBitcoinClient reactiveBitcoinClient
+    ) {
+        return new BulkExtractorBitcoinToCSV(reactiveBitcoinClient);
+    }
 }
