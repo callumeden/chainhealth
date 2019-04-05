@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.core.publisher.ParallelFlux;
 import reactor.core.scheduler.Schedulers;
 
@@ -25,6 +26,15 @@ public class BulkExtractorBitcoinToCSV {
     public Disposable saveBlocksAndTransactionsToNeo4j(long fromHeight, long toHeight) {
         csvWriter = new BitcoinToCSV<>();
 
+        if (fromHeight == 0) {
+            //For the genesis block, do not fetch the transaction, since it is not a valid tx. Do block only.
+            client.getBlockHash(0)
+                    .flatMap(client::getBlock)
+                    .flatMap(csvWriter::writeBlock)
+                    .subscribe(block -> logger.info("Wrote the Genesis block."));
+            fromHeight ++;
+        }
+
         return fetchBlocksParallel(fromHeight, toHeight)
                 .flatMap(csvWriter::writeBlock)
                 .concatMap(this::fetchTransactionsParallel)
@@ -34,6 +44,7 @@ public class BulkExtractorBitcoinToCSV {
     }
 
     private ParallelFlux<BitcoinBlock> fetchBlocksParallel(long fromHeight, long toHeight) {
+
         int fromInt = (int) fromHeight;
         int count = (int) (toHeight - fromInt) + 1;
 
