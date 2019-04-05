@@ -13,7 +13,7 @@ public class BitcoinToCSV<B extends AbstractBlock> {
 
     private static final String DATA_FILE_PATH = "./import/data";
     private static final String RELATIONS_FILE_PATH = "./import/relations";
-    private static final int RECORDS_PER_FILE = 1000000;
+    private static final int RECORDS_PER_FILE = 10000000;
 
     private static final String BLOCK_FILE_PREFIX = "sample-block-data";
     private static final String TRANSACTION_FILE_PREFIX = "sample-transaction-data";
@@ -52,7 +52,7 @@ public class BitcoinToCSV<B extends AbstractBlock> {
         this.dataFileWriters.put(Label.BLOCK,  new CsvWriter(DATA_FILE_PATH, BLOCK_FILE_PREFIX, RECORDS_PER_FILE));
         this.dataFileWriters.put(Label.TRANSACTION,new CsvWriter(DATA_FILE_PATH, TRANSACTION_FILE_PREFIX, RECORDS_PER_FILE));
         this.dataFileWriters.put(Label.OUTPUT, new CsvWriter(DATA_FILE_PATH, OUTPUT_FILE_PREFIX, RECORDS_PER_FILE));
-        this.dataFileWriters.put(Label.ADDRESS, new CsvWriter(DATA_FILE_PATH, ADDRESS_FILE_PREFIX, RECORDS_PER_FILE));
+        this.dataFileWriters.put(Label.ADDRESS, new CsvWriter(DATA_FILE_PATH, ADDRESS_FILE_PREFIX, Integer.MAX_VALUE));
         this.dataFileWriters.put(Label.COINBASE, new CsvWriter(DATA_FILE_PATH, COINBASE_FILE_PREFIX, RECORDS_PER_FILE));
 
         this.relationshipFileWriters.put(Relationship.CHAINED_FROM, new CsvWriter(RELATIONS_FILE_PATH, CHAINED_FROM_RELATION_PREFIX, RECORDS_PER_FILE));
