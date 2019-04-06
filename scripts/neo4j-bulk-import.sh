@@ -6,7 +6,7 @@ if [ $# -eq 0 ]
         echo -e '\t 1:path to neo4j'
 
     else
-        if [ $# -ne 1 ]; then echo neo4j path needed; fi
+        if [ $# -ne 1 ]; then echo path to neo4j bin needed; fi
 
         if [ $# -eq 1 ]
             then
@@ -17,7 +17,7 @@ if [ $# -eq 0 ]
              done
 
 
-            ~/neo4j-community-3.5.3/bin/neo4j-admin import --nodes="./import/headers/address-header.csv,./import/data/sample-address-data.*"\
+            $1/bin/neo4j-admin import --nodes="./import/headers/address-header.csv,./import/data/sample-address-data.*"\
                                     --nodes="./import/headers/block-header.csv,./import/data/sample-block-data.*"\
                                     --nodes="./import/headers/coinbase-header.csv,./import/data/sample-coinbase-data.*"\
                                     --nodes="./import/headers/output-header.csv,./import/data/sample-output-data.*"\
