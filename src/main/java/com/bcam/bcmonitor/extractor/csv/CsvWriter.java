@@ -38,7 +38,7 @@ public class CsvWriter {
             return new CSVPrinter(writer, CSVFormat.DEFAULT);
 
         } catch (IOException e) {
-            logger.error("CsvWriter failure: Could not build printer for files " + filePrefix);
+            logger.error("CsvWriter failure: Could not build printer for files " + filePrefix, e);
         } catch (Exception e) {
             e.printStackTrace();
         }
