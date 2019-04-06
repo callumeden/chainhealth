@@ -8,7 +8,7 @@ if [ $# -eq 0 ]
         echo -e '\t fromheight \t toheight'
 
     else
-        if [ $# -ne 2 ]; then echo three parameters needed; fi
+        if [ $# -ne 2 ]; then echo two parameters needed; fi
 
         if [ $# -eq 2 ]
             then
