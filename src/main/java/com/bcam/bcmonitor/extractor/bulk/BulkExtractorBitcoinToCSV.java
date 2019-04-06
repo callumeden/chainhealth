@@ -12,6 +12,8 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.ParallelFlux;
 import reactor.core.scheduler.Schedulers;
 
+import java.time.Duration;
+
 public class BulkExtractorBitcoinToCSV {
 
     final private ReactiveClient<BitcoinBlock, BitcoinTransaction> client;
@@ -51,7 +53,8 @@ public class BulkExtractorBitcoinToCSV {
         logger.info("Count: " + count);
 
         return Flux.range(fromInt, count)
-                .parallel(3)
+                .delayElements(Duration.ofMillis(1))
+                .parallel(4)
                 .runOn(Schedulers.elastic())
                 .concatMap(client::getBlockHash)
                 .concatMap(client::getBlock);
@@ -59,7 +62,8 @@ public class BulkExtractorBitcoinToCSV {
 
     private ParallelFlux<BitcoinTransaction> fetchTransactionsParallel(BitcoinBlock block) {
         return Flux.fromIterable(block.getTxids())
-                .parallel(3)
+                .delayElements(Duration.ofMillis(1))
+                .parallel(4)
                 .runOn(Schedulers.elastic())
                 .concatMap(client::getTransaction);
     }
