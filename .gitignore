@@ -24,4 +24,5 @@
 /nbdist/
 /.nb-gradle/
 
-/import/**/*.csv
+/import/data/*.csv
+/import/relations/*.csv
