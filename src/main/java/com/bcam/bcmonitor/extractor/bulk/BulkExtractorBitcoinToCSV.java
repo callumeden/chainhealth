@@ -40,7 +40,7 @@ public class BulkExtractorBitcoinToCSV {
                 .concatMap(this::fetchTransactionsParallel)
                 .flatMap(transaction -> csvWriter.writeTransaction((BitcoinTransaction) transaction))
                 .doOnError(error -> logger.error("Transaction failed to write" + error))
-                .subscribe(tx -> logger.info("Finished with tx {}", tx));
+                .subscribe();
     }
 
     private ParallelFlux<BitcoinBlock> fetchBlocksParallel(long fromHeight, long toHeight) {
@@ -54,8 +54,7 @@ public class BulkExtractorBitcoinToCSV {
                 .parallel(3)
                 .runOn(Schedulers.elastic())
                 .concatMap(client::getBlockHash)
-                .concatMap(client::getBlock)
-                .doOnNext(bitcoinBlock -> logger.info("Created block " + bitcoinBlock));
+                .concatMap(client::getBlock);
     }
 
     private ParallelFlux<BitcoinTransaction> fetchTransactionsParallel(BitcoinBlock block) {

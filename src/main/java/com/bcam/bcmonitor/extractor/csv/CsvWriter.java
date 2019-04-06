@@ -18,12 +18,14 @@ public class CsvWriter {
     private static final Logger logger = LoggerFactory.getLogger(CsvWriter.class);
     private int recordsWritten = 0;
     private final String filePrefix;
+    private final String dataName;
     private final String filePath;
     private CSVPrinter printer;
     private final int recordsPerFile;
     private Lock writeLock = new ReentrantLock();
 
-    public CsvWriter(String filePath, String filePrefix, int recordsPerFile) {
+    public CsvWriter(String dataName, String filePath, String filePrefix, int recordsPerFile) {
+        this.dataName = dataName;
         this.filePath = filePath;
         this.filePrefix = filePrefix;
         this.recordsPerFile = recordsPerFile;
@@ -61,6 +63,11 @@ public class CsvWriter {
             if (recordsWritten % recordsPerFile == 0) {
                 printer = buildPrinter();
             }
+
+            if (recordsWritten % 1000 == 0) {
+                logger.info("{} : # Entries : {}", dataName, recordsWritten);
+            }
+
         } catch (IOException e) {
             logger.error("CsvWriter failure : could not write values " + Arrays.toString(values));
         }

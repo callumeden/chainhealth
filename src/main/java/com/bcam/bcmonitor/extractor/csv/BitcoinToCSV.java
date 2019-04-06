@@ -49,18 +49,18 @@ public class BitcoinToCSV<B extends AbstractBlock> {
     }
 
     public BitcoinToCSV() {
-        this.dataFileWriters.put(Label.BLOCK,  new CsvWriter(DATA_FILE_PATH, BLOCK_FILE_PREFIX, RECORDS_PER_FILE));
-        this.dataFileWriters.put(Label.TRANSACTION,new CsvWriter(DATA_FILE_PATH, TRANSACTION_FILE_PREFIX, RECORDS_PER_FILE));
-        this.dataFileWriters.put(Label.OUTPUT, new CsvWriter(DATA_FILE_PATH, OUTPUT_FILE_PREFIX, RECORDS_PER_FILE));
-        this.dataFileWriters.put(Label.ADDRESS, new CsvWriter(DATA_FILE_PATH, ADDRESS_FILE_PREFIX, Integer.MAX_VALUE));
-        this.dataFileWriters.put(Label.COINBASE, new CsvWriter(DATA_FILE_PATH, COINBASE_FILE_PREFIX, RECORDS_PER_FILE));
+        this.dataFileWriters.put(Label.BLOCK,  new CsvWriter(Label.BLOCK.name(), DATA_FILE_PATH, BLOCK_FILE_PREFIX, RECORDS_PER_FILE));
+        this.dataFileWriters.put(Label.TRANSACTION,new CsvWriter(Label.TRANSACTION.name(), DATA_FILE_PATH, TRANSACTION_FILE_PREFIX, RECORDS_PER_FILE));
+        this.dataFileWriters.put(Label.OUTPUT, new CsvWriter(Label.OUTPUT.name(), DATA_FILE_PATH, OUTPUT_FILE_PREFIX, RECORDS_PER_FILE));
+        this.dataFileWriters.put(Label.ADDRESS, new CsvWriter(Label.ADDRESS.name(), DATA_FILE_PATH, ADDRESS_FILE_PREFIX, Integer.MAX_VALUE));
+        this.dataFileWriters.put(Label.COINBASE, new CsvWriter(Label.COINBASE.name(), DATA_FILE_PATH, COINBASE_FILE_PREFIX, RECORDS_PER_FILE));
 
-        this.relationshipFileWriters.put(Relationship.CHAINED_FROM, new CsvWriter(RELATIONS_FILE_PATH, CHAINED_FROM_RELATION_PREFIX, RECORDS_PER_FILE));
-        this.relationshipFileWriters.put(Relationship.MINED_IN, new CsvWriter(RELATIONS_FILE_PATH, MINED_IN_RELATION_PREFIX, RECORDS_PER_FILE));
-        this.relationshipFileWriters.put(Relationship.LOCKED_TO, new CsvWriter(RELATIONS_FILE_PATH, LOCKED_TO_RELATION_PREFIX, RECORDS_PER_FILE));
-        this.relationshipFileWriters.put(Relationship.OUTPUTS, new CsvWriter(RELATIONS_FILE_PATH, OUTPUTS_RELATION_PREFIX, RECORDS_PER_FILE));
-        this.relationshipFileWriters.put(Relationship.COINBASE, new CsvWriter(RELATIONS_FILE_PATH, COINBASE_RELATION_PREFIX, RECORDS_PER_FILE));
-        this.relationshipFileWriters.put(Relationship.INPUTS, new CsvWriter(RELATIONS_FILE_PATH, INPUTS_RELATION_PREFIX, RECORDS_PER_FILE));
+        this.relationshipFileWriters.put(Relationship.CHAINED_FROM, new CsvWriter(Relationship.CHAINED_FROM.name(), RELATIONS_FILE_PATH, CHAINED_FROM_RELATION_PREFIX, RECORDS_PER_FILE));
+        this.relationshipFileWriters.put(Relationship.MINED_IN, new CsvWriter(Relationship.MINED_IN.name(), RELATIONS_FILE_PATH, MINED_IN_RELATION_PREFIX, RECORDS_PER_FILE));
+        this.relationshipFileWriters.put(Relationship.LOCKED_TO, new CsvWriter(Relationship.LOCKED_TO.name(), RELATIONS_FILE_PATH, LOCKED_TO_RELATION_PREFIX, RECORDS_PER_FILE));
+        this.relationshipFileWriters.put(Relationship.OUTPUTS, new CsvWriter(Relationship.OUTPUTS.name(), RELATIONS_FILE_PATH, OUTPUTS_RELATION_PREFIX, RECORDS_PER_FILE));
+        this.relationshipFileWriters.put(Relationship.COINBASE, new CsvWriter(Relationship.COINBASE.name(), RELATIONS_FILE_PATH, COINBASE_RELATION_PREFIX, RECORDS_PER_FILE));
+        this.relationshipFileWriters.put(Relationship.INPUTS, new CsvWriter(Relationship.INPUTS.name(), RELATIONS_FILE_PATH, INPUTS_RELATION_PREFIX, RECORDS_PER_FILE));
     }
 
     public Mono<B> writeBlock(B block) {
