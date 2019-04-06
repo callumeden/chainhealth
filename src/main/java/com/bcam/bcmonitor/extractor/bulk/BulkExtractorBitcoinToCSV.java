@@ -8,7 +8,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 import reactor.core.publisher.ParallelFlux;
 import reactor.core.scheduler.Schedulers;
 
@@ -34,7 +33,7 @@ public class BulkExtractorBitcoinToCSV {
                     .flatMap(client::getBlock)
                     .flatMap(csvWriter::writeBlock)
                     .subscribe(block -> logger.info("Wrote the Genesis block."));
-            fromHeight ++;
+            fromHeight++;
         }
 
         return fetchBlocksParallel(fromHeight, toHeight)
@@ -54,17 +53,17 @@ public class BulkExtractorBitcoinToCSV {
 
         return Flux.range(fromInt, count)
                 .delayElements(Duration.ofMillis(1))
-                .parallel(4)
-                .runOn(Schedulers.elastic())
+                .parallel(3)
+                .runOn(Schedulers.parallel())
                 .concatMap(client::getBlockHash)
                 .concatMap(client::getBlock);
     }
 
     private ParallelFlux<BitcoinTransaction> fetchTransactionsParallel(BitcoinBlock block) {
         return Flux.fromIterable(block.getTxids())
-                .delayElements(Duration.ofMillis(1))
-                .parallel(4)
-                .runOn(Schedulers.elastic())
+                .delayElements(Duration.ofMillis(10))
+                .parallel(3)
+                .runOn(Schedulers.parallel())
                 .concatMap(client::getTransaction);
     }
 }
