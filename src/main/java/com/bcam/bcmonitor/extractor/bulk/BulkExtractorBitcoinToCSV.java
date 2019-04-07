@@ -52,7 +52,6 @@ public class BulkExtractorBitcoinToCSV {
         logger.info("Count: " + count);
 
         return Flux.range(fromInt, count)
-                .delayElements(Duration.ofMillis(10))
                 .parallel(3)
                 .runOn(Schedulers.parallel())
                 .concatMap(client::getBlockHash)

@@ -11,13 +11,15 @@ if [ $# -eq 0 ]
         if [ $# -eq 1 ]
             then
 
-            for file in ./import/data/*-address-data-*.csv; do
-                echo "De-duping $file"
-                sort -u $file -o $file
-             done
+            echo "Concat of address files into one"
 
+            cat ./import/data/*-address-data-*.csv > ./import/data/sample-address-data.csv
+            echo "De duping address file"
 
-            $1/bin/neo4j-admin import --nodes="./import/headers/address-header.csv,./import/data/sample-address-data.*"\
+            sort -u ./import/data/sample-address-data.csv -o ./import/data/sample-address-data.csv
+
+            echo "Done de-dupe"
+            $1/bin/neo4j-admin import --nodes="./import/headers/address-header.csv,./import/data/sample-address-data.csv"\
                                     --nodes="./import/headers/block-header.csv,./import/data/sample-block-data.*"\
                                     --nodes="./import/headers/coinbase-header.csv,./import/data/sample-coinbase-data.*"\
                                     --nodes="./import/headers/output-header.csv,./import/data/sample-output-data.*"\
