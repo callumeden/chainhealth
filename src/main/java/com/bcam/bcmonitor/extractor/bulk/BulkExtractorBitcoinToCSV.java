@@ -51,7 +51,7 @@ public class BulkExtractorBitcoinToCSV {
 
         return Flux.range(fromInt, count)
                 .parallel(3)
-                .runOn(Schedulers.parallel())
+                .runOn(Schedulers.elastic())
                 .concatMap(client::getBlockHash)
                 .concatMap(client::getBlock);
     }
@@ -59,7 +59,7 @@ public class BulkExtractorBitcoinToCSV {
     private ParallelFlux<BitcoinTransaction> fetchTransactionsParallel(BitcoinBlock block) {
         return Flux.fromIterable(block.getTxids())
                 .parallel(3)
-                .runOn(Schedulers.parallel())
+                .runOn(Schedulers.elastic())
                 .concatMap(client::getTransaction);
     }
 }
