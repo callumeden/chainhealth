@@ -21,7 +21,6 @@ public class BitcoinToCSV<B extends AbstractBlock> {
     private static final String OUTPUT_FILE_PREFIX = "sample-output-data";
     private static final String COINBASE_FILE_PREFIX = "sample-coinbase-data";
 
-
     private static final String CHAINED_FROM_RELATION_PREFIX = "relation-chained-from";
     private static final String MINED_IN_RELATION_PREFIX = "relation-mined-in";
     private static final String LOCKED_TO_RELATION_PREFIX = "relation-locked-to";
@@ -29,8 +28,12 @@ public class BitcoinToCSV<B extends AbstractBlock> {
     private static final String COINBASE_RELATION_PREFIX = "relation-coinbase";
     private static final String INPUTS_RELATION_PREFIX = "relation-inputs";
 
-    private Map<Relationship, CsvWriter> relationshipFileWriters = new HashMap<>();
-    private Map<Label, CsvWriter> dataFileWriters = new HashMap<>();
+    private Map<Long, Map<Relationship, CsvWriter>> perThreadRelationWriters = new HashMap<>();
+    private Map<Long, Map<Label, CsvWriter>> perThreadNodeWriters = new HashMap<>();
+    private Map<Label, String> filePrefixes = new HashMap<>();
+
+    private Map<Relationship, String> relationFilePrefixes = new HashMap<>();
+
     private enum Relationship {
         CHAINED_FROM,
         MINED_IN,
@@ -49,24 +52,76 @@ public class BitcoinToCSV<B extends AbstractBlock> {
     }
 
     public BitcoinToCSV() {
-        this.dataFileWriters.put(Label.BLOCK,  new CsvWriter(Label.BLOCK.name(), DATA_FILE_PATH, BLOCK_FILE_PREFIX, RECORDS_PER_FILE));
-        this.dataFileWriters.put(Label.TRANSACTION,new CsvWriter(Label.TRANSACTION.name(), DATA_FILE_PATH, TRANSACTION_FILE_PREFIX, RECORDS_PER_FILE));
-        this.dataFileWriters.put(Label.OUTPUT, new CsvWriter(Label.OUTPUT.name(), DATA_FILE_PATH, OUTPUT_FILE_PREFIX, RECORDS_PER_FILE));
-        this.dataFileWriters.put(Label.ADDRESS, new CsvWriter(Label.ADDRESS.name(), DATA_FILE_PATH, ADDRESS_FILE_PREFIX, Integer.MAX_VALUE));
-        this.dataFileWriters.put(Label.COINBASE, new CsvWriter(Label.COINBASE.name(), DATA_FILE_PATH, COINBASE_FILE_PREFIX, RECORDS_PER_FILE));
+        //Populate map of label -> file prefix
+        filePrefixes.put(Label.BLOCK, BLOCK_FILE_PREFIX);
+        filePrefixes.put(Label.TRANSACTION, TRANSACTION_FILE_PREFIX);
+        filePrefixes.put(Label.OUTPUT, OUTPUT_FILE_PREFIX);
+        filePrefixes.put(Label.ADDRESS, ADDRESS_FILE_PREFIX);
+        filePrefixes.put(Label.COINBASE, COINBASE_FILE_PREFIX);
 
-        this.relationshipFileWriters.put(Relationship.CHAINED_FROM, new CsvWriter(Relationship.CHAINED_FROM.name(), RELATIONS_FILE_PATH, CHAINED_FROM_RELATION_PREFIX, RECORDS_PER_FILE));
-        this.relationshipFileWriters.put(Relationship.MINED_IN, new CsvWriter(Relationship.MINED_IN.name(), RELATIONS_FILE_PATH, MINED_IN_RELATION_PREFIX, RECORDS_PER_FILE));
-        this.relationshipFileWriters.put(Relationship.LOCKED_TO, new CsvWriter(Relationship.LOCKED_TO.name(), RELATIONS_FILE_PATH, LOCKED_TO_RELATION_PREFIX, RECORDS_PER_FILE));
-        this.relationshipFileWriters.put(Relationship.OUTPUTS, new CsvWriter(Relationship.OUTPUTS.name(), RELATIONS_FILE_PATH, OUTPUTS_RELATION_PREFIX, RECORDS_PER_FILE));
-        this.relationshipFileWriters.put(Relationship.COINBASE, new CsvWriter(Relationship.COINBASE.name(), RELATIONS_FILE_PATH, COINBASE_RELATION_PREFIX, RECORDS_PER_FILE));
-        this.relationshipFileWriters.put(Relationship.INPUTS, new CsvWriter(Relationship.INPUTS.name(), RELATIONS_FILE_PATH, INPUTS_RELATION_PREFIX, RECORDS_PER_FILE));
+        relationFilePrefixes.put(Relationship.CHAINED_FROM, CHAINED_FROM_RELATION_PREFIX);
+        relationFilePrefixes.put(Relationship.MINED_IN, MINED_IN_RELATION_PREFIX);
+        relationFilePrefixes.put(Relationship.LOCKED_TO, LOCKED_TO_RELATION_PREFIX);
+        relationFilePrefixes.put(Relationship.OUTPUTS, OUTPUTS_RELATION_PREFIX);
+        relationFilePrefixes.put(Relationship.COINBASE, COINBASE_RELATION_PREFIX);
+        relationFilePrefixes.put(Relationship.INPUTS, INPUTS_RELATION_PREFIX);
+    }
+
+    private CsvWriter getNodeWriterForThread(Label label) {
+        long threadId = Thread.currentThread().getId();
+
+        if (perThreadNodeWriters.containsKey(threadId)) {
+            Map<Label, CsvWriter> nodeWriters = perThreadNodeWriters.get(threadId);
+
+            if (nodeWriters.containsKey(label)) {
+                return nodeWriters.get(label);
+            }
+
+            int recordsPerFile = label == Label.ADDRESS ? Integer.MAX_VALUE : RECORDS_PER_FILE;
+
+            CsvWriter newNodeWriter = new CsvWriter(label.name(), DATA_FILE_PATH, getFilePrefix(threadId, label), recordsPerFile);
+            nodeWriters.put(label, newNodeWriter);
+            return newNodeWriter;
+        }
+
+        perThreadNodeWriters.put(threadId, new HashMap<>());
+        return getNodeWriterForThread(label);
+    }
+
+    private CsvWriter getRelationshipWriterForThread(Relationship relationship) {
+        long threadId = Thread.currentThread().getId();
+
+        if (perThreadRelationWriters.containsKey(threadId)) {
+            Map<Relationship, CsvWriter> relationWriter = perThreadRelationWriters.get(threadId);
+
+            if (relationWriter.containsKey(relationship)) {
+                return relationWriter.get(relationship);
+            }
+
+            CsvWriter newRelationWriter = new CsvWriter(relationship.name(), RELATIONS_FILE_PATH, getFilePrefix(threadId, relationship), RECORDS_PER_FILE);
+            relationWriter.put(relationship, newRelationWriter);
+            return newRelationWriter;
+        }
+
+        perThreadRelationWriters.put(threadId, new HashMap<>());
+        return getRelationshipWriterForThread(relationship);
+    }
+
+    private String getFilePrefix(long threadId, Label label) {
+        String filePrefix = filePrefixes.get(label);
+        return filePrefix + "-thread-" + threadId;
+    }
+
+    private String getFilePrefix(long threadId, Relationship relationship) {
+        String filePrefix = relationFilePrefixes.get(relationship);
+        return filePrefix + "-thread-" + threadId;
     }
 
     public Mono<B> writeBlock(B block) {
+
         String blockHash = block.getHash();
         String prevBlockHash = block.getPrevBlockHash();
-        CsvWriter blockWriter = dataFileWriters.get(Label.BLOCK);
+        CsvWriter blockWriter = getNodeWriterForThread(Label.BLOCK);
         blockWriter.write(blockHash, prevBlockHash, block.getTimeStamp(), block.getSizeBytes(), Label.BLOCK.name());
 
         if (prevBlockHash == null) {
@@ -83,13 +138,13 @@ public class BitcoinToCSV<B extends AbstractBlock> {
     private String writeCoinbase(String blockHash) {
         //todo : figure out value
         String coinbaseId = "coinbase-" + blockHash;
-        CsvWriter coinbaseWriter = dataFileWriters.get(Label.COINBASE);
+        CsvWriter coinbaseWriter = getNodeWriterForThread(Label.COINBASE);
         coinbaseWriter.write(coinbaseId, Label.OUTPUT.name());
         return coinbaseId;
     }
 
     public Mono<BitcoinTransaction> writeTransaction(BitcoinTransaction transaction) {
-        CsvWriter transactionWriter = dataFileWriters.get(Label.TRANSACTION);
+        CsvWriter transactionWriter = getNodeWriterForThread(Label.TRANSACTION);
         transactionWriter.write(transaction.getHash(), Label.TRANSACTION.name());
         createRelationship(transaction.getHash(), Relationship.MINED_IN, transaction.getBlockHash());
 
@@ -113,7 +168,7 @@ public class BitcoinToCSV<B extends AbstractBlock> {
     }
 
     private String writeOutputNode(TransactionOutput output) {
-        CsvWriter outputWriter = dataFileWriters.get(Label.OUTPUT);
+        CsvWriter outputWriter = getNodeWriterForThread(Label.OUTPUT);
         String outputId = output.getTxid() + '-' + output.getIndex();
         outputWriter.write(outputId, output.getValue(), Label.OUTPUT.name());
         output.getAddresses().forEach(address -> {
@@ -124,12 +179,12 @@ public class BitcoinToCSV<B extends AbstractBlock> {
     }
 
     private void writeAddress(String address) {
-        CsvWriter addressWriter = dataFileWriters.get(Label.ADDRESS);
+        CsvWriter addressWriter = getNodeWriterForThread(Label.ADDRESS);
         addressWriter.write(address, Label.ADDRESS.name());
     }
 
     private void createRelationship(Object o1, Relationship relationship, Object o2) {
-        CsvWriter relationWriter = relationshipFileWriters.get(relationship);
+        CsvWriter relationWriter = getRelationshipWriterForThread(relationship);
         relationWriter.write(o1, o2, relationship.name());
     }
 }

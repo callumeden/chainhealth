@@ -10,8 +10,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class CsvWriter {
 
@@ -22,7 +20,6 @@ public class CsvWriter {
     private final String filePath;
     private CSVPrinter printer;
     private final int recordsPerFile;
-    private Lock writeLock = new ReentrantLock();
 
     public CsvWriter(String dataName, String filePath, String filePrefix, int recordsPerFile) {
         this.dataName = dataName;
@@ -33,7 +30,7 @@ public class CsvWriter {
     }
 
     private CSVPrinter buildPrinter() {
-        try{
+        try {
             String path = String.format("%s/%s-%d.csv", filePath, filePrefix, recordsWritten);
             BufferedWriter writer = Files.newBufferedWriter(Paths.get(path));
 
@@ -50,22 +47,17 @@ public class CsvWriter {
 
 
     public void write(Object... values) {
-        writeLock.lock();
         try {
-            try{
-                printer.printRecord(values);
-                recordsWritten ++;
-                printer.flush();
-            } finally {
-                writeLock.unlock();
-            }
+            printer.printRecord(values);
+            recordsWritten++;
+            printer.flush();
 
             if (recordsWritten % recordsPerFile == 0) {
                 printer = buildPrinter();
             }
 
             if (recordsWritten % 1000 == 0) {
-                logger.info("{} : # Entries : {}", dataName, recordsWritten);
+                logger.info("Data Type : {} | # Entries : {} | File Name : {}", dataName, recordsWritten, filePrefix);
             }
 
         } catch (IOException e) {

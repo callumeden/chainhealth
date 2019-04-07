@@ -11,8 +11,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.ParallelFlux;
 import reactor.core.scheduler.Schedulers;
 
-import java.time.Duration;
-
 public class BulkExtractorBitcoinToCSV {
 
     final private ReactiveClient<BitcoinBlock, BitcoinTransaction> client;
@@ -39,7 +37,7 @@ public class BulkExtractorBitcoinToCSV {
         return fetchBlocksParallel(fromHeight, toHeight)
                 .flatMap(csvWriter::writeBlock)
                 .concatMap(this::fetchTransactionsParallel)
-                .flatMap(transaction -> csvWriter.writeTransaction((BitcoinTransaction) transaction))
+                .flatMap(transaction -> csvWriter.writeTransaction(transaction))
                 .doOnError(error -> logger.error("Transaction failed to write" + error))
                 .subscribe();
     }
