@@ -35,9 +35,9 @@ public class BulkExtractorBitcoinToCSV {
         }
 
         return fetchBlocksParallel(fromHeight, toHeight)
-                .flatMap(csvWriter::writeBlock)
+                .concatMap(csvWriter::writeBlock)
                 .concatMap(this::fetchTransactionsParallel)
-                .flatMap(transaction -> csvWriter.writeTransaction(transaction))
+                .flatMap(csvWriter::writeTransaction)
                 .doOnError(error -> logger.error("Transaction failed to write" + error))
                 .subscribe();
     }
