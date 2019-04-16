@@ -11,20 +11,69 @@ if [ $# -eq 0 ]
         if [ $# -eq 1 ]
             then
 
-            echo "Concat of address files into one"
+            address_files_all="./import/headers/address-header.csv,./import/data/sample-address-data-unique.csv"
 
-            cat ./import/data/*-address-data-*.csv > ./import/data/sample-address-data.csv
-            echo "De duping address file"
+            echo "Address files are ${address_files_all}"
+            echo "======================================"
 
-            sort -u ./import/data/sample-address-data.csv -o ./import/data/sample-address-data.csv
+            block_files_regex="./import/data/blocks-with-exchange-rate/output-*/sample-block-data-*"
+            block_files_all="./import/headers/block-header.csv"
 
-            echo "Done de-dupe"
-            $1/bin/neo4j-admin import --nodes="./import/headers/address-header.csv,./import/data/sample-address-data.csv"\
-                                    --nodes="./import/headers/block-header.csv,./import/data/sample-block-data.*"\
-                                    --nodes="./import/headers/coinbase-header.csv,./import/data/sample-coinbase-data.*"\
-                                    --nodes="./import/headers/output-header.csv,./import/data/sample-output-data.*"\
-                                    --nodes="./import/headers/transaction-header.csv,./import/data/sample-transaction-data.*"\
-                                    --relationships="./import/headers/relations-header.csv,./import/relations/.*"\
+            for file in $block_files_regex; do
+                block_files_all=("${block_files_all},${file}")
+            done
+
+            echo "Block files are ${block_files_all}"
+            echo "======================================"
+
+            coinbase_files_regex="./import/data/bitcoin-csv-block-*/sample-coinbase-data-*"
+            coinbase_files_all="./import/headers/coinbase-header.csv"
+
+            for file in $coinbase_files_regex; do
+                coinbase_files_all=("${coinbase_files_all},${file}")
+            done
+
+            echo "Coinbase files are ${coinbase_files_all}"
+            echo "======================================"
+
+            output_files_regex="./import/data/bitcoin-csv-block-*/sample-output-data-*"
+            output_files_all="./import/headers/output-header.csv"
+
+            for file in $output_files_regex; do
+                output_files_all=("${output_files_all},${file}")
+            done
+
+            echo "Output files are ${output_files_all}"
+            echo "======================================"
+
+            transaction_files_regex="./import/data/bitcoin-csv-block-*/sample-transaction-data-*"
+            transaction_files_all="./import/headers/transaction-header.csv"
+
+            for file in $transaction_files_regex; do
+                transaction_files_all=("${transaction_files_all},${file}")
+            done
+
+            echo "Transaction files are ${transaction_files_all}"
+            echo "======================================"
+
+            relation_files_regex="./import/relations/bitcoin-csv-block-*/*"
+            relation_files_all="./import/headers/relations-header.csv,./import/relations/entity-relationships.csv"
+
+            for file in $relation_files_regex; do
+                relation_files_all=("${relation_files_all},${file}")
+            done
+
+            echo "Transaction files are ${relation_files_All}"
+            echo "======================================"
+
+
+            $1/bin/neo4j-admin import --nodes="${address_files_all}"\
+                                    --nodes="${block_files_all}"\
+                                    --nodes="${coinbase_files_all}"\
+                                    --nodes="${output_files_all}"\
+                                    --nodes="${transaction_files_all}"\
+                                    --nodes="./import/headers/entity-header.csv,./import/data/entity-nodes.csv"\
+                                    --relationships="${relation_files_all}"\
                                     --ignore-missing-nodes
         fi
 fi
