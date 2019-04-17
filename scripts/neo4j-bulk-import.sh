@@ -74,7 +74,6 @@ if [ $# -eq 0 ]
                                     --nodes="${transaction_files_all}"\
                                     --nodes="./import/headers/entity-header.csv,./import/data/entity-nodes.csv"\
                                     --relationships="${relation_files_all}"\
-                                    --ignore-missing-nodes \
                                     --high-io=true
         fi
 fi
