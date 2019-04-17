@@ -36,7 +36,7 @@ if [ $# -eq 0 ]
             echo "Coinbase files are ${coinbase_files_all}"
             echo "======================================"
 
-            output_files_regex="./import/data/bitcoin-csv-block-*/sample-output-data-*"
+            output_files_regex="./import/data/bitcoin-csv-block-*/sample-output-data-unique.csv"
             output_files_all="./import/headers/output-header.csv"
 
             for file in $output_files_regex; do
@@ -46,7 +46,7 @@ if [ $# -eq 0 ]
             echo "Output files are ${output_files_all}"
             echo "======================================"
 
-            transaction_files_regex="./import/data/bitcoin-csv-block-*/sample-transaction-data-*"
+            transaction_files_regex="./import/data/bitcoin-csv-block-*/sample-transaction-data-unique.csv"
             transaction_files_all="./import/headers/transaction-header.csv"
 
             for file in $transaction_files_regex; do
@@ -63,7 +63,7 @@ if [ $# -eq 0 ]
                 relation_files_all=("${relation_files_all},${file}")
             done
 
-            echo "Transaction files are ${relation_files_All}"
+            echo "Relation files are ${relation_files_All}"
             echo "======================================"
 
 
@@ -74,6 +74,7 @@ if [ $# -eq 0 ]
                                     --nodes="${transaction_files_all}"\
                                     --nodes="./import/headers/entity-header.csv,./import/data/entity-nodes.csv"\
                                     --relationships="${relation_files_all}"\
-                                    --ignore-missing-nodes
+                                    --ignore-missing-nodes \
+                                    --high-io=true
         fi
 fi
