@@ -57,7 +57,7 @@ if [ $# -eq 0 ]
             echo "======================================"
 
             relation_chained_from_regex="./import/relations/bitcoin-csv-block-*/relation-chained-from-*.csv"
-            relation_chained_from_files="./import/headers/relation-header.csv"
+            relation_chained_from_files="./import/headers/relations-header.csv"
 
             for file in $relation_chained_from_regex; do
                 relation_chained_from_files=("${relation_chained_from_files},${file}")
@@ -67,7 +67,7 @@ if [ $# -eq 0 ]
             echo "======================================"
 
             relation_coinbase_regex="./import/relations/bitcoin-csv-block-*/relation-coinbase-*.csv"
-            relation_coinbase_files="./import/headers/relation-header.csv"
+            relation_coinbase_files="./import/headers/relations-header.csv"
 
             for file in $relation_coinbase_regex; do
                 relation_coinbase_files=("${relation_coinbase_files},${file}")
@@ -77,7 +77,7 @@ if [ $# -eq 0 ]
             echo "======================================"
 
             relation_inputs_regex="./import/relations/bitcoin-csv-block-*/relation-inputs-*.csv"
-            relation_inputs_files="./import/headers/relation-header.csv"
+            relation_inputs_files="./import/headers/relations-header.csv"
 
             for file in $relation_inputs_regex; do
                 relation_inputs_files=("${relation_inputs_files},${file}")
@@ -89,7 +89,7 @@ if [ $# -eq 0 ]
 
 
             relation_locked_to_regex="./import/relations/bitcoin-csv-block-*/relation-locked-to-*.csv"
-            relation_locked_to_files="./import/headers/relation-header.csv"
+            relation_locked_to_files="./import/headers/relations-header.csv"
 
             for file in $relation_locked_to_regex; do
                 relation_locked_to_files=("${relation_locked_to_files},${file}")
@@ -101,7 +101,7 @@ if [ $# -eq 0 ]
 
 
             relation_mined_in_regex="./import/relations/bitcoin-csv-block-*/relation-mined-in-*.csv"
-            relation_mined_in_files="./import/headers/relation-header.csv"
+            relation_mined_in_files="./import/headers/relations-header.csv"
 
             for file in $relation_mined_in_regex; do
                 relation_mined_in_files=("${relation_mined_in_files},${file}")
@@ -113,7 +113,7 @@ if [ $# -eq 0 ]
 
 
             relation_outputs_regex="./import/relations/bitcoin-csv-block-*/relation-outputs-*.csv"
-            relation_outputs_files="./import/headers/relation-header.csv"
+            relation_outputs_files="./import/headers/relations-header.csv"
 
             for file in $relation_outputs_regex; do
                 relation_outputs_files=("${relation_outputs_files},${file}")
@@ -137,7 +137,7 @@ if [ $# -eq 0 ]
                                     --relationships="${relation_locked_to_files}"\
                                     --relationships="${relation_mined_in_files}"\
                                     --relationships="${relation_outputs_files}"\
-                                    --relationships="./import/headers/relation-header.csv,./import/relations/entity-relationships.csv"\
+                                    --relationships="./import/headers/relations-header.csv,./import/relations/entity-relationships.csv"\
                                     --high-io=true
         fi
 fi
