@@ -1,1 +1,1 @@
-hash:ID, prevBlockHash, timestamp:int, size:int,:LABEL,gbp:double, usd:double,eur:double
+hash:ID,prevBlockHash,timestamp:int,size:int,:LABEL,gbp:double,usd:double,eur:double

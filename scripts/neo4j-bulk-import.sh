@@ -56,15 +56,73 @@ if [ $# -eq 0 ]
             echo "Transaction files are ${transaction_files_all}"
             echo "======================================"
 
-            relation_files_regex="./import/relations/bitcoin-csv-block-*/*"
-            relation_files_all="./import/headers/relations-header.csv,./import/relations/entity-relationships.csv"
+            relation_chained_from_regex="./import/relations/bitcoin-csv-block-*/relation-chained-from-*.csv"
+            relation_chained_from_files="./import/headers/relation-header.csv"
 
-            for file in $relation_files_regex; do
-                relation_files_all=("${relation_files_all},${file}")
+            for file in $relation_chained_from_regex; do
+                relation_chained_from_files=("${relation_chained_from_files},${file}")
             done
 
-            echo "Relation files are ${relation_files_All}"
+            echo "Relation chained from files are ${relation_chained_from_files}"
             echo "======================================"
+
+            relation_coinbase_regex="./import/relations/bitcoin-csv-block-*/relation-coinbase-*.csv"
+            relation_coinbase_files="./import/headers/relation-header.csv"
+
+            for file in $relation_coinbase_regex; do
+                relation_coinbase_files=("${relation_coinbase_files},${file}")
+            done
+
+            echo "Relation coinbase files are ${relation_coinbase_files}"
+            echo "======================================"
+
+            relation_inputs_regex="./import/relations/bitcoin-csv-block-*/relation-inputs-*.csv"
+            relation_inputs_files="./import/headers/relation-header.csv"
+
+            for file in $relation_inputs_regex; do
+                relation_inputs_files=("${relation_inputs_files},${file}")
+            done
+
+
+            echo "Relation input files are ${relation_inputs_files}"
+            echo "======================================"
+
+
+            relation_locked_to_regex="./import/relations/bitcoin-csv-block-*/relation-locked-to-*.csv"
+            relation_locked_to_files="./import/headers/relation-header.csv"
+
+            for file in $relation_locked_to_regex; do
+                relation_locked_to_files=("${relation_locked_to_files},${file}")
+            done
+
+
+            echo "Relation locked to files are ${relation_locked_to_files}"
+            echo "======================================"
+
+
+            relation_mined_in_regex="./import/relations/bitcoin-csv-block-*/relation-mined-in-*.csv"
+            relation_mined_in_files="./import/headers/relation-header.csv"
+
+            for file in $relation_mined_in_regex; do
+                relation_mined_in_files=("${relation_mined_in_files},${file}")
+            done
+
+
+            echo "Relation mined in files are ${relation_mined_in_files}"
+            echo "======================================"
+
+
+            relation_outputs_regex="./import/relations/bitcoin-csv-block-*/relation-outputs-*.csv"
+            relation_outputs_files="./import/headers/relation-header.csv"
+
+            for file in $relation_outputs_regex; do
+                relation_outputs_files=("${relation_outputs_files},${file}")
+            done
+
+
+            echo "Relation outputs files are ${relation_outputs_files}"
+            echo "======================================"
+
 
 
             $1/bin/neo4j-admin import --nodes="${address_files_all}"\
@@ -73,7 +131,13 @@ if [ $# -eq 0 ]
                                     --nodes="${output_files_all}"\
                                     --nodes="${transaction_files_all}"\
                                     --nodes="./import/headers/entity-header.csv,./import/data/entity-nodes.csv"\
-                                    --relationships="${relation_files_all}"\
+                                    --relationships="${relation_chained_from_files}"\
+                                    --relationships="${relation_coinbase_files}"\
+                                    --relationships="${relation_inputs_files}"\
+                                    --relationships="${relation_locked_to_files}"\
+                                    --relationships="${relation_mined_in_files}"\
+                                    --relationships="${relation_outputs_files}"\
+                                    --relationships="./import/headers/relation-header.csv,./import/relations/entity-relationships.csv"\
                                     --high-io=true
         fi
 fi
