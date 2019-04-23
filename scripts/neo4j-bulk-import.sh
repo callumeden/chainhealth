@@ -124,13 +124,20 @@ if [ $# -eq 0 ]
             echo "======================================"
 
 
-
-            $1/bin/neo4j-admin import --nodes="${address_files_all}"\
-                                    --nodes="${block_files_all}"\
-                                    --nodes="${coinbase_files_all}"\
-                                    --nodes="${output_files_all}"\
-                                    --nodes="${transaction_files_all}"\
-                                    --nodes="./import/headers/entity-header.csv,./import/data/entity-nodes.csv"\
-                                    --relationships="${relation_files_all}"
+            $1/bin/neo4j-admin import --nodes:ADDRESS $address_files_all \
+                                    --nodes:BLOCK $block_files_all \
+                                    --nodes:COINBASE $coinbase_files_all \
+                                    --nodes:OUTPUT $output_files_all \
+                                    --nodes:TRANSACTION $transaction_files_all \
+                                    --nodes:ENTITY "./import/headers/entity-header.csv,./import/data/entity-nodes.csv" \
+                                    --relationships:CHAINED_FROM $relation_chained_from_files \
+                                    --relationships:COINBASE $relation_coinbase_files \
+                                    --relationships:INPUTS $relation_inputs_files \
+                                    --relationships:LOCKED_TO $relation_locked_to_files \
+                                    --relationships:MINED_IN $relation_mined_in_files \
+                                    --relationships:OUTPUTS $relation_outputs_files \
+                                    --max-memory=95% \
+                                    --id-type integer \
+                                    --report-file="callum-debug-log.log" 
         fi
 fi
