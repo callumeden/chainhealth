@@ -136,8 +136,8 @@ if [ $# -eq 0 ]
                                     --relationships:LOCKED_TO $relation_locked_to_files \
                                     --relationships:MINED_IN $relation_mined_in_files \
                                     --relationships:OUTPUTS $relation_outputs_files \
-                                    --max-memory=95% \
-                                    --id-type integer \
-                                    --report-file="callum-debug-log.log" 
+                                    --max-memory 95% \
+                                    --ignore-missing-nodes true \
+                                    --report-file "callum-debug-log.log" 
         fi
 fi
