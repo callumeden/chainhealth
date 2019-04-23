@@ -131,13 +131,6 @@ if [ $# -eq 0 ]
                                     --nodes="${output_files_all}"\
                                     --nodes="${transaction_files_all}"\
                                     --nodes="./import/headers/entity-header.csv,./import/data/entity-nodes.csv"\
-                                    --relationships="${relation_chained_from_files}"\
-                                    --relationships="${relation_coinbase_files}"\
-                                    --relationships="${relation_inputs_files}"\
-                                    --relationships="${relation_locked_to_files}"\
-                                    --relationships="${relation_mined_in_files}"\
-                                    --relationships="${relation_outputs_files}"\
-                                    --relationships="./import/headers/relations-header.csv,./import/relations/entity-relationships.csv"\
-                                    --high-io=true
+                                    --relationships="${relation_files_all}"
         fi
 fi
