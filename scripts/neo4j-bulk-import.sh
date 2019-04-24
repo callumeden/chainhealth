@@ -56,7 +56,7 @@ if [ $# -eq 0 ]
             echo "Transaction files are ${transaction_files_all}"
             echo "======================================"
 
-            relation_chained_from_regex="./import/relations/bitcoin-csv-block-*/relation-chained-from-*.csv"
+            relation_chained_from_regex="./import/relations/bitcoin-csv-block-*/relation-chained-from-*"
             relation_chained_from_files="./import/headers/relations-header.csv"
 
             for file in $relation_chained_from_regex; do
@@ -66,7 +66,7 @@ if [ $# -eq 0 ]
             echo "Relation chained from files are ${relation_chained_from_files}"
             echo "======================================"
 
-            relation_coinbase_regex="./import/relations/bitcoin-csv-block-*/relation-coinbase-*.csv"
+            relation_coinbase_regex="./import/relations/bitcoin-csv-block-*/relation-coinbase-*"
             relation_coinbase_files="./import/headers/relations-header.csv"
 
             for file in $relation_coinbase_regex; do
@@ -76,7 +76,7 @@ if [ $# -eq 0 ]
             echo "Relation coinbase files are ${relation_coinbase_files}"
             echo "======================================"
 
-            relation_inputs_regex="./import/relations/bitcoin-csv-block-*/relation-inputs-*.csv"
+            relation_inputs_regex="./import/relations/bitcoin-csv-block-*/relation-inputs-*"
             relation_inputs_files="./import/headers/relations-header.csv"
 
             for file in $relation_inputs_regex; do
@@ -88,7 +88,7 @@ if [ $# -eq 0 ]
             echo "======================================"
 
 
-            relation_locked_to_regex="./import/relations/bitcoin-csv-block-*/relation-locked-to-*.csv"
+            relation_locked_to_regex="./import/relations/bitcoin-csv-block-*/relation-locked-to-*"
             relation_locked_to_files="./import/headers/relations-header.csv"
 
             for file in $relation_locked_to_regex; do
@@ -136,6 +136,7 @@ if [ $# -eq 0 ]
                                     --relationships:LOCKED_TO $relation_locked_to_files \
                                     --relationships:MINED_IN $relation_mined_in_files \
                                     --relationships:OUTPUTS $relation_outputs_files \
+                                    --relationships:HAS_ENTITY "./import/headers/relations-header.csv,./import/relations/entity-relationships.csv" \
                                     --max-memory 95% \
                                     --ignore-missing-nodes true \
                                     --report-file "callum-debug-log.log" 
