@@ -26,7 +26,7 @@ if [ $# -eq 0 ]
             echo "Block files are ${block_files_all}"
             echo "======================================"
 
-            coinbase_files_regex="./import/data/bitcoin-csv-block-*/sample-coinbase-data-*"
+            coinbase_files_regex="./import/data/corrections/correction-*/corrected-sample-coinbase-data-*"
             coinbase_files_all="./import/headers/coinbase-header.csv"
 
             for file in $coinbase_files_regex; do
