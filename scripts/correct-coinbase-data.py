@@ -3,11 +3,12 @@ import csv
 import ntpath
 
 
-input_path = input("please provide input path")
+input_path = input("please provide input path...")
 output_path = input("Please provide output path....")
 
 files = glob.glob(input_path + "/sample-coinbase-data-*")
 
+print("files found are {}".format(files))
 
 for file_path in files:
 
@@ -21,4 +22,3 @@ for file_path in files:
 			for coinbase in reader:
 				coinbase_id = coinbase[0]
 				writer.writerow([coinbase_id, 'COINBASE'])
-
